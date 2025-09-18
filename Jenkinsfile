@@ -19,6 +19,15 @@ pipeline {
             }
         }
 
+        stage('Scan Image') {
+            steps {
+                script {
+                    // Scan the Docker image using Trivy
+                    sh 'trivy image $IMAGE_NAME:$IMAGE_TAG'
+                }
+            }
+        }
+
         stage('Run Container') {
             steps {
                 sh 'docker run -d -p 8000:8000 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG || true'
