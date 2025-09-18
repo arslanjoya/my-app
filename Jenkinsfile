@@ -1,35 +1,29 @@
-pipeline {
-    agent any
-
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git branch: 'main', url: 'https://github.com/username/repo.git'
+@Library('Shared')_
+pipeline{
+    agent { label 'dev-server'}
+    
+    stages{
+        stage("Code clone"){
+            steps{
+                sh "whoami"
+            clone("https://github.com/LondheShubham153/django-notes-app.git","main")
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh 'docker build -t my-app-image .'
-                }
+        stage("Code Build"){
+            steps{
+            dockerbuild("notes-app","latest")
             }
         }
-
-        stage('Stop Old Container') {
-            steps {
-                script {
-                    sh 'docker rm -f my-app-container || true'
-                }
+        stage("Push to DockerHub"){
+            steps{
+                dockerpush("dockerHubCreds","notes-app","latest")
             }
         }
-
-        stage('Run New Container') {
-            steps {
-                script {
-                    sh 'docker run -d -p 8080:80 --name my-app-container my-app-image'
-                }
+        stage("Deploy"){
+            steps{
+                deploy()
             }
         }
+        
     }
 }
