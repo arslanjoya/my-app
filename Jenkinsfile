@@ -8,6 +8,14 @@ pipeline {
                 }
             }
         }
+        stage('Stop Old Container') {
+            steps {
+                script {
+                    // Stop & remove container if it exists
+                    sh 'docker rm -f my-app-container || true'
+                }
+            }
+        }
         stage('Run Docker Container') {
             steps {
                 script {
