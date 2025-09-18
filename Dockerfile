@@ -1,11 +1,20 @@
-# Base image: 
-FROM nginx:alpine
+FROM python:3.9
 
-# project code (HTML/CSS/JS) 
-COPY . /usr/share/nginx/html
+WORKDIR /app/backend
 
-# Nginx server port expose
-EXPOSE 80
+COPY requirements.txt /app/backend
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-# Nginx start command
-CMD ["nginx", "-g", "daemon off;"]
+
+# Install app dependencies
+RUN pip install mysqlclient
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app/backend
+
+EXPOSE 8000
+#RUN python manage.py migrate
+#RUN python manage.py makemigrations
