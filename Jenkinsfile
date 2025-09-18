@@ -1,6 +1,13 @@
 pipeline {
     agent any
+
     stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/username/repo.git'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -8,15 +15,16 @@ pipeline {
                 }
             }
         }
+
         stage('Stop Old Container') {
             steps {
                 script {
-                    // Stop & remove container if it exists
                     sh 'docker rm -f my-app-container || true'
                 }
             }
         }
-        stage('Run Docker Container') {
+
+        stage('Run New Container') {
             steps {
                 script {
                     sh 'docker run -d -p 8080:80 --name my-app-container my-app-image'
