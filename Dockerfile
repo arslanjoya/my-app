@@ -1,22 +1,10 @@
-FROM python:3.9
+# Use official nginx image
+FROM nginx:alpine
 
-WORKDIR /app/backend
+# Copy static files into nginx html folder
+COPY public/ /usr/share/nginx/html
 
-COPY requirements.txt /app/backend
+# Expose port 80
+EXPOSE 80
 
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install dependencies
-RUN pip install mysqlclient
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . /app/backend
-
-EXPOSE 8000
-
-# Default command (agar chahiye to enable kar sakte ho)
-# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
+CMD ["nginx", "-g", "daemon off;"]
