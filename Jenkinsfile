@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Checking out repo..."
-                git branch: 'main', url: 'https://github.com/LondheShubham153/django-notes-app.git'
+                git branch: 'main', url: 'https://github.com/arslanjoya/my-app.git'
             }
         }
 
@@ -57,7 +57,7 @@ pipeline {
             steps {
                 echo "Pushing image to Docker Hub..."
                 withCredentials([usernamePassword(
-                    credentialsId: 'DockerFile_cred',
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
@@ -73,6 +73,7 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
         failure {
