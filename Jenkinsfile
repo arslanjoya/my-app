@@ -56,7 +56,11 @@ pipeline {
         stage('Push Image to Docker Hub') {
             steps {
                 echo "Pushing image to Docker Hub..."
-                withCredentials([string(crentialsId:'docker-pass', variable: 'Docker_pass')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DockerFile_cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
                         set -e
                         echo "Logging in to Docker Hub..."
@@ -69,7 +73,6 @@ pipeline {
                 }
             }
         }
-    }
 
     post {
         failure {
