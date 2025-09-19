@@ -4,6 +4,8 @@ pipeline {
     environment {
         IMAGE_NAME = "notes-app"
         IMAGE_TAG  = "latest"
+        DOCKERHUB_CREDENTIALS = "dockerhub-cred" // Your Jenkins credential ID
+        DOCKERHUB_USERNAME = "your-dockerhub-username" // Replace with your Docker Hub username
     }
 
     stages {
@@ -31,6 +33,22 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh 'docker run -d -p 8000:8000 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG || true'
+            }
+        }
+
+        stage('Push Image to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "dockerhub-cred",
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
+                        docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
             }
         }
     }
