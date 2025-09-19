@@ -32,17 +32,25 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 8000:8000 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG || true'
+                sh '''
+                # Stop and remove old container if exists
+                docker stop notes-app-container || true
+                docker rm notes-app-container || true
+                # Run new container
+                docker run -d -p 8000:8000 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
 
         stage('Push Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: "dockerhub-cred",
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                credentialsId: "dockerhub-cred",
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+                )])
+
+                {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
