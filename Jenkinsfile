@@ -57,7 +57,7 @@ pipeline {
             steps {
                 echo "Pushing image to Docker Hub..."
                 withCredentials([usernamePassword(
-                    credentialsId: "${Jenkins_token}",
+                    credentialsId: 'Jenkins_token',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
