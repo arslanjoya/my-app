@@ -90,7 +90,7 @@ services:
   notes-app:
     image: arslanoffical/notes-app:latest
     ports:
-      - "8080:8080"
+      - "9090:8080"
     restart: always
 EOL
 docker-compose down
