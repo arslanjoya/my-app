@@ -44,7 +44,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                echo "Running container..."
+                echo "Running container locally on Jenkins server..."
                 sh '''
                     docker stop notes-app-container || true
                     docker rm notes-app-container || true
@@ -69,6 +69,30 @@ pipeline {
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
                         echo "Pushing image..."
                         docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to AWS EC2') {
+            steps {
+                echo "Deploying container on EC2 using docker-compose..."
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@<EC2_PUBLIC_IP> << EOF
+                      mkdir -p ~/notes-app && cd ~/notes-app
+                      echo 'version: "3"
+services:
+  notes-app:
+    image: arslanoffical/notes-app:latest
+    ports:
+      - "8080:8080"
+    restart: always' > docker-compose.yml
+
+                      docker-compose down
+                      docker-compose pull
+                      docker-compose up -d
+                    EOF
                     '''
                 }
             }
