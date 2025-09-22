@@ -82,20 +82,21 @@ pipeline {
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh '''
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@<EC2_PUBLIC_IP> << EOF
-                      mkdir -p ~/notes-app && cd ~/notes-app
-                      echo 'version: "3"
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@3.92.139.95 << 'EOF'
+mkdir -p ~/notes-app && cd ~/notes-app
+cat > docker-compose.yml <<EOL
+version: "3"
 services:
   notes-app:
     image: arslanoffical/notes-app:latest
     ports:
       - "8080:8080"
-    restart: always' > docker-compose.yml
-
-                      docker-compose down
-                      docker-compose pull
-                      docker-compose up -d
-                    EOF
+    restart: always
+EOL
+docker-compose down
+docker-compose pull
+docker-compose up -d
+EOF
                     '''
                 }
             }
