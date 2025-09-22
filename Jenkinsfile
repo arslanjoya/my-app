@@ -82,7 +82,7 @@ pipeline {
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh '''
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@3.92.139.95 << 'EOF'
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.229.90.201 << 'EOF'
 mkdir -p ~/notes-app && cd ~/notes-app
 cat > docker-compose.yml <<EOL
 version: "3"
