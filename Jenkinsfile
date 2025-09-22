@@ -77,9 +77,12 @@ pipeline {
         stage('Deploy to AWS EC2') {
             steps {
                 echo "Deploying container on EC2 using docker-compose..."
-                sshagent(['ec2-ssh-key']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-ssh-key',
+                    keyFileVariable: 'SSH_KEY'
+                )]) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@<EC2_PUBLIC_IP> << EOF
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@<EC2_PUBLIC_IP> << EOF
                       mkdir -p ~/notes-app && cd ~/notes-app
                       echo 'version: "3"
 services:
