@@ -29,7 +29,6 @@ pipeline {
             steps {
                 echo "Building Docker image..."
                 sh '''
-                    echo "Trying to build image..."
                     docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
@@ -42,13 +41,13 @@ pipeline {
             }
         }
 
-        stage('Run Container') {
+        stage('Run Container Locally') {
             steps {
                 echo "Running container locally on Jenkins server..."
                 sh '''
                     docker stop notes-app-container || true
                     docker rm notes-app-container || true
-                    docker run -d -p 8000:8000 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
+                    docker run -d -p 9090:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
                 '''
             }
         }
@@ -63,11 +62,8 @@ pipeline {
                 )]) {
                     sh '''
                         set -e
-                        echo "Logging in to Docker Hub..."
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        echo "Tagging image..."
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
-                        echo "Pushing image..."
                         docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
                     '''
                 }
@@ -90,7 +86,7 @@ services:
   notes-app:
     image: arslanoffical/notes-app:latest
     ports:
-      - "9090:8080"
+      - "9090:80"
     restart: always
 EOL
 docker-compose down
