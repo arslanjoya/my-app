@@ -79,7 +79,14 @@ pipeline {
                 )]) {
                     sh '''
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
-mkdir -p ~/notes-app && cd ~/notes-app
+cd ~/notes-app || mkdir -p ~/notes-app && cd ~/notes-app
+# Stop & remove old container
+docker stop notes-app_notes-app_1 || true
+docker rm notes-app_notes-app_1 || true
+# Remove old network
+docker network rm notes-app_default || true
+
+# Write docker-compose.yml
 cat > docker-compose.yml <<EOL
 version: "3"
 services:
@@ -89,7 +96,8 @@ services:
       - "9090:80"
     restart: always
 EOL
-docker-compose down
+
+docker-compose down || true
 docker-compose pull
 docker-compose up -d
 EOF
