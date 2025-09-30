@@ -1,18 +1,14 @@
-# Step 1: Build React app
-FROM node:18 AS build
-WORKDIR /app
-
-# Copy package files and install deps
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
-
-# Copy source code and build
-COPY . .
-RUN npm run build
-
-# Step 2: Serve with Nginx
+# Use lightweight Nginx image
 FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
 
+# Set working directory (optional, default in Nginx is /usr/share/nginx/html)
+WORKDIR /usr/share/nginx/html
+
+# Copy all files from the repo into Nginx html folder
+COPY . .
+
+# Expose port 80 to access the HTML page
 EXPOSE 80
+
+# Start Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
