@@ -1,14 +1,14 @@
 # Use lightweight Nginx image
 FROM nginx:alpine
 
-# Set working directory (optional, default in Nginx is /usr/share/nginx/html)
+# Set working directory (default Nginx folder)
 WORKDIR /usr/share/nginx/html
 
-# Copy all files from the repo into Nginx html folder
+# Copy all repo files into Nginx html folder
 COPY . .
 
-# Expose port 80 to access the HTML page
+# Expose port 80
 EXPOSE 80
 
-# Start Nginx in the foreground
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
