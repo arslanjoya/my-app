@@ -41,6 +41,19 @@ pipeline {
             }
         }
 
+        stage('Free Port 9091 Locally') {
+            steps {
+                echo "Ensuring port 9091 is free on Jenkins server..."
+                sh '''
+                    PIDS=$(sudo lsof -t -i TCP:9091 || true)
+                    if [ ! -z "$PIDS" ]; then
+                        echo "Killing processes on port 9091: $PIDS"
+                        sudo kill -9 $PIDS
+                    fi
+                '''
+            }
+        }
+
         stage('Run Container Locally') {
             steps {
                 echo "Running container locally on Jenkins server..."
@@ -64,7 +77,27 @@ pipeline {
                         set -e
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
-                        docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
+                        docker push $DOCKER_USER/$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+        stage('Free Port 9091 on EC2') {
+            steps {
+                echo "Ensuring port 9091 is free on EC2 server..."
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-ssh-key',
+                    keyFileVariable: 'SSH_KEY'
+                )]) {
+                    sh '''
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
+PIDS=$(sudo lsof -t -i TCP:9091 || true)
+if [ ! -z "$PIDS" ]; then
+    echo "Killing processes on port 9091: $PIDS"
+    sudo kill -9 $PIDS
+fi
+EOF
                     '''
                 }
             }
@@ -80,9 +113,11 @@ pipeline {
                     sh '''
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
 cd ~/notes-app || mkdir -p ~/notes-app && cd ~/notes-app
-# Stop & remove old container
-docker stop notes-app_notes-app_1 || true
-docker rm notes-app_notes-app_1 || true
+
+# Stop & remove old containers
+docker stop notes-app_notes-app_1 notes-app-container || true
+docker rm notes-app_notes-app_1 notes-app-container || true
+
 # Remove old network
 docker network rm notes-app_default || true
 
