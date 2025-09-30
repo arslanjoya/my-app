@@ -50,14 +50,14 @@ pipeline {
             }
         }
 
-        stage('Run Container Locally') {
-            steps {
-                echo "Running container locally on Jenkins server..."
-                sh '''
-                    docker run -d -p 9091:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
-                '''
-            }
-        }
+        // stage('Run Container Locally') {
+        //     steps {
+        //         echo "Running container locally on Jenkins server..."
+        //         sh '''
+        //             docker run -d -p 9091:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
+        //         '''
+        //     }
+        // }
 
         stage('Push Image to Docker Hub') {
             steps {
