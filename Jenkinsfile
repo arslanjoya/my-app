@@ -9,66 +9,24 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Checking out repo..."
                 git branch: 'main', url: 'https://github.com/arslanjoya/my-app.git'
-            }
-        }
-
-        stage('Verify Workspace') {
-            steps {
-                echo "Listing files to make sure Dockerfile exists..."
-                sh '''
-                    pwd
-                    ls -la
-                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image..."
-                sh '''
-                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
-                '''
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
-        stage('Scan Image') {
+        stage('Push to Docker Hub') {
             steps {
-                echo "Scanning Docker image with Trivy..."
-                sh 'trivy image --skip-update $IMAGE_NAME:$IMAGE_TAG || true'
-            }
-        }
-
-        stage('Free Port 9091 Locally') {
-            steps {
-                echo "Stopping any container using port 9091 on Jenkins server..."
-                sh '''
-                    docker ps -q --filter "publish=9091" | xargs -r docker stop
-                    docker ps -q --filter "publish=9091" | xargs -r docker rm
-                '''
-            }
-        }
-
-        // stage('Run Container Locally') {
-        //     steps {
-        //         echo "Running container locally on Jenkins server..."
-        //         sh '''
-        //             docker run -d -p 9091:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
-        //         '''
-        //     }
-        // }
-
-        stage('Push Image to Docker Hub') {
-            steps {
-                echo "Pushing image to Docker Hub..."
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds1',   // make sure this matches Jenkins
+                    credentialsId: 'dockerhub-creds1',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                        set -e
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
                         docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
@@ -77,26 +35,8 @@ pipeline {
             }
         }
 
-        stage('Free Port 9091 on EC2') {
-            steps {
-                echo "Stopping any container using port 9091 on EC2..."
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-ssh-key',
-                    keyFileVariable: 'SSH_KEY'
-                )]) {
-                    sh '''
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
-docker ps -q --filter "publish=9091" | xargs -r docker stop
-docker ps -q --filter "publish=9091" | xargs -r docker rm
-EOF
-                    '''
-                }
-            }
-        }
-
         stage('Deploy to AWS EC2') {
             steps {
-                echo "Deploying container on EC2 using docker-compose..."
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'ec2-ssh-key',
                     keyFileVariable: 'SSH_KEY'
@@ -105,10 +45,7 @@ EOF
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
 cd ~/notes-app || mkdir -p ~/notes-app && cd ~/notes-app
 
-# Remove old network
-docker network rm notes-app_default || true
-
-# Write docker-compose.yml
+# Create docker-compose.yml
 cat > docker-compose.yml <<EOL
 version: "3"
 services:
@@ -126,15 +63,6 @@ EOF
                     '''
                 }
             }
-        }
-    }
-
-    post {
-        failure {
-            echo "❌ Pipeline failed! Check logs above."
-        }
-        success {
-            echo "✅ Pipeline completed successfully!"
         }
     }
 }
