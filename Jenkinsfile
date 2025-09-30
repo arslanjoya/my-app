@@ -47,7 +47,7 @@ pipeline {
                 sh '''
                     docker stop notes-app-container || true
                     docker rm notes-app-container || true
-                    docker run -d -p 9090:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
+                    docker run -d -p 9091:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
                 '''
             }
         }
@@ -93,7 +93,7 @@ services:
   notes-app:
     image: arslanoffical/notes-app:latest
     ports:
-      - "9090:80"
+      - "9091:80"
     restart: always
 EOL
 
