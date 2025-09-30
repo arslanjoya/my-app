@@ -4,7 +4,6 @@ pipeline {
     environment {
         IMAGE_NAME = "notes-app"
         IMAGE_TAG  = "latest"
-        DOCKERHUB_CREDENTIALS = "DockerFile_cred"
     }
 
     stages {
@@ -43,13 +42,10 @@ pipeline {
 
         stage('Free Port 9091 Locally') {
             steps {
-                echo "Ensuring port 9091 is free on Jenkins server..."
+                echo "Stopping any container using port 9091 on Jenkins server..."
                 sh '''
-                    PIDS=$(sudo lsof -t -i TCP:9091 || true)
-                    if [ ! -z "$PIDS" ]; then
-                        echo "Killing processes on port 9091: $PIDS"
-                        sudo kill -9 $PIDS
-                    fi
+                    docker ps -q --filter "publish=9091" | xargs -r docker stop
+                    docker ps -q --filter "publish=9091" | xargs -r docker rm
                 '''
             }
         }
@@ -58,8 +54,6 @@ pipeline {
             steps {
                 echo "Running container locally on Jenkins server..."
                 sh '''
-                    docker stop notes-app-container || true
-                    docker rm notes-app-container || true
                     docker run -d -p 9091:80 --name notes-app-container $IMAGE_NAME:$IMAGE_TAG
                 '''
             }
@@ -69,7 +63,7 @@ pipeline {
             steps {
                 echo "Pushing image to Docker Hub..."
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds1',
+                    credentialsId: 'dockerhub-creds1',   // make sure this matches Jenkins
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
@@ -77,7 +71,7 @@ pipeline {
                         set -e
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                         docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
-                        docker push $DOCKER_USER/$IMAGE_TAG
+                        docker push $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
                     '''
                 }
             }
@@ -85,18 +79,15 @@ pipeline {
 
         stage('Free Port 9091 on EC2') {
             steps {
-                echo "Ensuring port 9091 is free on EC2 server..."
+                echo "Stopping any container using port 9091 on EC2..."
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'ec2-ssh-key',
                     keyFileVariable: 'SSH_KEY'
                 )]) {
                     sh '''
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
-PIDS=$(sudo lsof -t -i TCP:9091 || true)
-if [ ! -z "$PIDS" ]; then
-    echo "Killing processes on port 9091: $PIDS"
-    sudo kill -9 $PIDS
-fi
+docker ps -q --filter "publish=9091" | xargs -r docker stop
+docker ps -q --filter "publish=9091" | xargs -r docker rm
 EOF
                     '''
                 }
@@ -113,10 +104,6 @@ EOF
                     sh '''
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@34.226.194.196 << 'EOF'
 cd ~/notes-app || mkdir -p ~/notes-app && cd ~/notes-app
-
-# Stop & remove old containers
-docker stop notes-app_notes-app_1 notes-app-container || true
-docker rm notes-app_notes-app_1 notes-app-container || true
 
 # Remove old network
 docker network rm notes-app_default || true
